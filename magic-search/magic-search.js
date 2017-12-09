@@ -3,6 +3,24 @@ window.onload = function () {
     if (typeof wol === 'function') wol();
 
     (function (mw, $) {
+        var PROP_INSTANCE_OF = 'P31';
+        var RuleType = Object.freeze({
+            PRESENT: { value: 1, text: 'IS PRESENT' },
+            NOT_PRESENT: { value: 2, text: 'IS NOT PRESENT' },
+            EQUAL: { value: 3, text: 'EQUALS' },
+            NOT_EQUAL: { value: 4, text: 'DOES NOT EQUAL' },
+            ANY_OF: { value: 5, text: 'IS ANY OF' },
+            ALL_OF: { value: 6, text: 'IS ALL OF' },
+            NONE_OF: { value: 7, text: 'IS NONE OF' }
+        });
+        var valueToRuleType = [];
+        for (var idx in RuleType) {
+            if (RuleType.hasOwnProperty(idx)) {
+                var type = RuleType[idx];
+                valueToRuleType['' + type.value] = type;
+            }
+        }
+
         var uiVisible = false;
         var model = [];
         var $uirulelist = null;
@@ -31,10 +49,10 @@ window.onload = function () {
                 /*
                 model = [
                     {
+                        type: RuleType.IS,
                         property: 'P31',
                         link: 'https://www.wikidata.org/wiki/Property:P31',
                         caption: 'instance of',
-                        mode: true,
                         values: [{
                             link: 'https://www.wikidata.org/wiki/Q5',
                             caption: 'human',
@@ -98,6 +116,8 @@ window.onload = function () {
                 $(document.body).append($uibox);
 
                 $('.wikibase-statementgroupview-property-label').append($('<button class="sbt-btn">+</button>').click(addProperty));
+                $('.wikibase-snakview-variation-valuesnak a[href^="/wiki/Q"]').after($('<button class="sbt-btn">+</button>').click(addItemValue));
+                // TODO: .wikibase-snakview-variation-novaluesnak, .wikibase-snakview-variation-somevaluesnak
             });
         });
 
@@ -105,8 +125,7 @@ window.onload = function () {
             var $button = $(this);
             var $link = $button.parent().children('a').first();
             var url = $link.attr('href');
-            var colon = url.lastIndexOf(':');
-            var property = url.substr(colon + 1);
+            var property = getPropertyFromUrl(url);
             for (var i = 0; i < model.length; ++i) {
                 if (model[i].property === property) return;
             }
@@ -114,9 +133,77 @@ window.onload = function () {
                 property: property,
                 link: url,
                 caption: $link.text(),
-                mode: true,
+                type: RuleType.PRESENT,
                 values: null
             });
+            rerenderUiRules();
+        }
+
+        function getPropertyFromUrl(url) {
+            var colon = url.lastIndexOf(':');
+            return url.substr(colon + 1);
+        }
+
+        function getEntityFromUrl(url) {
+            var slash = url.lastIndexOf('/');
+            return url.substr(slash + 1);
+        }
+
+        function addItemValue() {
+            var $button = $(this);
+            var $entityLink = $button.parent().children('a').first();
+            var entityUrl = $entityLink.attr('href');
+            var entity = getEntityFromUrl(entityUrl);
+            var $propertyLink = $button.closest('.wikibase-statementgroupview').find('.wikibase-statementgroupview-property-label').children('a').first();
+            var propertyUrl = $propertyLink.attr('href');
+            var property = getPropertyFromUrl(propertyUrl);
+            var existingItem = null;
+            for (var i = 0; i < model.length; ++i) {
+                if (model[i].property === property) {
+                    existingItem = model[i];
+                    break;
+                }
+            }
+            if (existingItem && existingItem.values && existingItem.values.length) {
+                for (var j = 0; j < existingItem.values.length; ++j) {
+                    var value = existingItem.values[i];
+                    if (value.link === entityUrl) {
+                        return;
+                    }
+                }
+            }
+            var newValue = {
+                link: entityUrl,
+                caption: $entityLink.text(),
+                sparql: 'wd:' + entity
+            };
+            if (!existingItem) {
+                model.push({
+                    property: property,
+                    link: propertyUrl,
+                    caption: $propertyLink.text(),
+                    type: RuleType.EQUAL,
+                    values: [newValue]
+                });
+            } else {
+                existingItem.values = (existingItem.values || []);
+                existingItem.values.push(newValue);
+
+                switch (existingItem.type) {
+                    case RuleType.EQUAL:
+                        existingItem.type = RuleType.ALL_OF;
+                        break;
+                    case RuleType.NOT_EQUAL:
+                        existingItem.type = RuleType.NONE_OF;
+                        break;
+                    case RuleType.PRESENT:
+                        existingItem.type = RuleType.EQUAL;
+                        break;
+                    case RuleType.NOT_PRESENT:
+                        existingItem.type = RuleType.NOT_EQUAL;
+                        break;
+                }
+            }
             rerenderUiRules();
         }
 
@@ -124,30 +211,41 @@ window.onload = function () {
             var sparql = 'SELECT DISTINCT ?item ?itemLabel WHERE {\n';
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
-                if (item.values && item.values.length) {
-                    if (item.values.length > 1 || item.mode) {
-                        var tabs = item.mode ? '\t' : '\t\t';
-                        if (!item.mode) sparql += '\t{';
+                switch (item.type) {
+                    case RuleType.EQUAL:
+                    case RuleType.NOT_EQUAL:
+                    case RuleType.ANY_OF:
+                    case RuleType.ALL_OF:
+                    case RuleType.NONE_OF:
+                        var noneOfType = item.type === RuleType.NONE_OF;
+                        var negativeType = noneOfType || item.type === RuleType.NOT_EQUAL;
+                        var cumulativeType = noneOfType || item.type === RuleType.ANY_OF;
+                        var anyOfType = item.type === RuleType.ANY_OF;
+                        var typeWithBlock = negativeType || anyOfType;
+                        if (negativeType) sparql += '\tMINUS {\n';
+                        else if (anyOfType) sparql += '\t{\n';
+                        var tabs = typeWithBlock ? '\t\t' : '\t';
+
                         for (var j = 0; j < item.values.length; ++j) {
                             var value = item.values[j];
                             sparql += tabs;
-                            if (!item.mode) {
+                            if (cumulativeType) {
                                 if (j > 0) sparql += 'OR ';
                                 sparql += '{ ';
                             }
-                            sparql += '?item wdt:' + item.property + ' ' + value.sparql + ' .\n';
-                            if (!item.mode) sparql += ' }';
+                            sparql += '?item wdt:' + item.property + ' ' + value.sparql;
+                            if (cumulativeType) sparql += ' }\n';
+                            else sparql += ' .\n';
                         }
-                        if (!item.mode) sparql += '\t}';
-                    } else {
-                        sparql += '\tMINUS { ?item wdt:' + item.property + ' ' + item.values[0].sparql + ' }\n';
-                    }
-                } else {
-                    if (item.mode) {
+
+                        if (typeWithBlock) sparql += '\t}\n';
+                        break;
+                    case RuleType.PRESENT:
                         sparql += '\t?item wdt:' + item.property + ' ?any' + item.property + ' .\n';
-                    } else {
+                        break;
+                    case RuleType.NOT_PRESENT:
                         sparql += '\tMINUS { ?item wdt:' + item.property + ' ?any' + item.property + ' }\n';
-                    }
+                        break;
                 }
             }
             sparql += '\tSERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". ?item rdfs:label ?itemLabel. }\n}\nLIMIT 30';
@@ -155,22 +253,28 @@ window.onload = function () {
             var sparqlUrl = 'https://query.wikidata.org/embed.html#' + encodeURI(sparql);
             window.open(sparqlUrl);
 
-            //alert(sparql);
+            // alert(sparql);
         }
 
         function rerenderUiRules() {
             $uirulelist.html('');
-            var validModel = false;
+            var searchableModel = false;
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
+                if ((item.type !== RuleType.PRESENT && item.type !== RuleType.NOT_PRESENT) || item.property !== PROP_INSTANCE_OF) searchableModel = true;
                 var $item = $('<li>');
                 $item.append($('<a>').attr('href', item.link).append($('<i>').text(item.caption)));
-                if (item.values && item.values.length) {
-                    item.validModel = true;
-                    if (item.values.length > 1) {
-                        if (item.mode) $item.append(' IS ALL OF');
-                        else $item.append(' IS ONE OF');
-
+                switch (item.type) {
+                    case RuleType.EQUAL:
+                    case RuleType.NOT_EQUAL:
+                        renderTypeSelector(item, $item);
+                        $item.append(' ');
+                        renderSingleValue(item.values[0], $item);
+                        break;
+                    case RuleType.ANY_OF:
+                    case RuleType.ALL_OF:
+                    case RuleType.NONE_OF:
+                        renderTypeSelector(item, $item);
                         var $values = $('<ul>');
                         $item.append($values);
                         for (var j = 0; j < item.values.length; ++j) {
@@ -178,28 +282,61 @@ window.onload = function () {
                             renderSingleValue(item.values[j], $value);
                             $values.append($value);
                         }
-                    } else {
-                        if (item.mode) {
-                            $item.append(' IS ');
-                            renderSingleValue(item.values[0], $item);
-                        } else {
-                            $item.append(' IS NOT ');
-                            renderSingleValue(item.values[0], $item);
-                        }
-                    }
-                } else {
-                    if (item.property !== 'P31') validModel = true;
-
-                    if (item.mode) {
-                        $item.append(' IS PRESENT');
-                    } else {
-                        $item.append(' IS NOT PRESENT');
-                    }
+                        break;
+                    case RuleType.PRESENT:
+                    case RuleType.NOT_PRESENT:
+                        renderTypeSelector(item, $item);
+                        break;
                 }
                 $uirulelist.append($item);
             }
-            $searchbtn.prop('disabled', !validModel);
+            $searchbtn.prop('disabled', !searchableModel);
             $clearbtn.prop('disabled', !model.length);
+        }
+
+        function renderTypeSelector(item, $container) {
+            var $select = $('<select>').data('wd-prop', item.property);
+            switch (item.type) {
+                case RuleType.EQUAL:
+                case RuleType.NOT_EQUAL:
+                    renderOption(RuleType.EQUAL, item.type, $select);
+                    renderOption(RuleType.NOT_EQUAL, item.type, $select);
+                    break;
+                case RuleType.ANY_OF:
+                case RuleType.ALL_OF:
+                case RuleType.NONE_OF:
+                    renderOption(RuleType.ANY_OF, item.type, $select);
+                    renderOption(RuleType.ALL_OF, item.type, $select);
+                    renderOption(RuleType.NONE_OF, item.type, $select);
+                    break;
+                case RuleType.PRESENT:
+                case RuleType.NOT_PRESENT:
+                    renderOption(RuleType.PRESENT, item.type, $select);
+                    renderOption(RuleType.NOT_PRESENT, item.type, $select);
+                    break;
+            }
+            $select.change(typeChanged);
+            $container.append(' ');
+            $container.append($select);
+        }
+
+        function typeChanged() {
+            var $select = $(this);
+            var property = $select.data('wd-prop');
+            var selectedType = valueToRuleType[$select.val()];
+            for (var i = 0; i < model.length; ++i) {
+                var item = model[i];
+                if (item.property === property) {
+                    item.type = selectedType;
+                    // TODO: validateSearchability();
+                    return;
+                }
+            }
+        }
+
+        function renderOption(ruleType, currentType, $select) {
+            var $option = $('<option>', { value: ruleType.value }).text(ruleType.text).prop('selected', ruleType === currentType);
+            $select.append($option);
         }
 
         function renderSingleValue(value, $container) {
