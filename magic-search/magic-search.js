@@ -5,26 +5,59 @@ window.onload = function () {
     (function (mw, $) {
         var PROP_INSTANCE_OF = 'P31';
         var RuleType = Object.freeze({
-            PRESENT: { value: 1, text: 'IS PRESENT' },
-            NOT_PRESENT: { value: 2, text: 'IS NOT PRESENT' },
-            EQUAL: { value: 3, text: 'EQUALS' },
-            NOT_EQUAL: { value: 4, text: 'DOES NOT EQUAL' },
-            ANY_OF: { value: 5, text: 'IS ANY OF' },
-            ALL_OF: { value: 6, text: 'IS ALL OF' },
-            NONE_OF: { value: 7, text: 'IS NONE OF' }
+            PRESENT: 1,
+            NOT_PRESENT: 2,
+            EQUAL: 3,
+            NOT_EQUAL: 4,
+            ANY_OF: 5,
+            ALL_OF: 6,
+            NONE_OF: 7
+            // TODO: DIFFERENT_THAN, DIFFERENT_THAN_ALL_OF
         });
-        var valueToRuleType = [];
-        for (var idx in RuleType) {
-            if (RuleType.hasOwnProperty(idx)) {
-                var type = RuleType[idx];
-                valueToRuleType['' + type.value] = type;
+        var i18n = {
+            cs: {
+                portletlink: 'Hledat podle této',
+                portlettooltip: 'Hledání dalších položek na základě této položky',
+                heading: 'Hledat podle této',
+                searchbtn: 'Hledat',
+                clearbtn: 'Smazat vše',
+                clearconfirm: 'Opravdu smazat vše?',
+                sparqlbtn: 'SPARQL',
+
+                type1: 'je definováno',
+                type2: 'není definováno',
+                type3: 'je rovno',
+                type4: 'není rovno',
+                type5: 'je libovolné z',
+                type6: 'je všechno z',
+                type7: 'je žádné z',
+            },
+            en: {
+                portletlink: 'Search by this',
+                portlettooltip: 'Search for other items based on this one',
+                heading: 'Search by this',
+                searchbtn: 'Search',
+                clearbtn: 'Clear all',
+                clearconfirm: 'Really clear all?',
+                sparqlbtn: 'SPARQL',
+                
+                type1: 'is present',
+                type2: 'is not present',
+                type3: 'is equal to',
+                type4: 'is not equal to',
+                type5: 'is any of',
+                type6: 'is all of',
+                type7: 'is none of',
             }
-        }
+        };
+        var lang = 'cs';
+        var msgs = i18n[lang] || i18n['en'];
 
         var uiVisible = false;
         var model = [];
         var $uirulelist = null;
         var $searchbtn = null;
+        var $sparqlbtn = null;
         var $clearbtn = null;
 
         mw.loader.using(['mediawiki.util']).then(function () {
@@ -35,57 +68,15 @@ window.onload = function () {
             var portletLink = mw.util.addPortletLink(
                 'p-tb',
                 '#',
-                'Hledat podle této',
+                msgs.portletlink,
                 't-wdtree',
-                'Hledání dalších položek na základě této položky'
+                msgs.portlettooltip
             );
             $(portletLink).click(function (e) {
                 e.preventDefault();
 
                 if (uiVisible) return;
                 uiVisible = true;
-
-                // TODO: mode for NONE OF?
-                /*
-                model = [
-                    {
-                        type: RuleType.IS,
-                        property: 'P31',
-                        link: 'https://www.wikidata.org/wiki/Property:P31',
-                        caption: 'instance of',
-                        values: [{
-                            link: 'https://www.wikidata.org/wiki/Q5',
-                            caption: 'human',
-                            sparql: 'wd:Q5'
-                        }]
-                    },
-                    {
-                        property: 'P54',
-                        link: 'https://www.wikidata.org/wiki/Property:P54',
-                        caption: 'member of sports team',
-                        mode: false,
-                        values: [
-                            {
-                                link: 'https://www.wikidata.org/wiki/Q193481',
-                                caption: 'AC Sparta Prague',
-                                sparql: 'wd:Q193481'
-                            },
-                            {
-                                link: 'https://www.wikidata.org/wiki/Q839313',
-                                caption: 'SK Dynamo České Budějovice',
-                                sparql: 'wd:Q839313'
-                            },
-                        ]
-                    },
-                    {
-                        property: 'P413',
-                        link: 'https://www.wikidata.org/wiki/Property:P413',
-                        caption: 'position played on team / speciality',
-                        mode: false,
-                        values: null
-                    },
-                ];
-                */
 
                 var $uibox = $('<div class="sbt-uibox">');
                 $uibox.append($('<a href="#" class="sbt-close">').text('x').click(function () {
@@ -97,16 +88,19 @@ window.onload = function () {
                     $clearbtn = null;
                     return false;
                 }));
-                $uibox.append($('<h3>Hledat podle této</h3>'));
+                $uibox.append($('<h3>').text(msgs.heading));
                 $uirulelist = $('<ul class="sbt-rulelist">');
                 $uibox.append($uirulelist);
-                $searchbtn = $('<button>').text('Hledat');
+                $searchbtn = $('<button>').text(msgs.searchbtn);
                 $searchbtn.click(executeSearch);
                 $uibox.append($searchbtn);
-                $clearbtn = $('<button>').text('Smazat vše');
+                $sparqlbtn = $('<button>').text(msgs.sparqlbtn);
+                $sparqlbtn.click(editSparql);
+                $uibox.append($sparqlbtn);
+                $clearbtn = $('<button>').text(msgs.clearbtn);
                 $clearbtn.click(function () {
                     if (model.length === 0) return false;
-                    if (!confirm('Opravdu smazat vše?')) return false;
+                    if (!confirm(msgs.clearconfirm)) return false;
                     model = [];
                     rerenderUiRules();
                 });
@@ -207,7 +201,15 @@ window.onload = function () {
             rerenderUiRules();
         }
 
+        function editSparql() {
+            doSparql(false);
+        }
+
         function executeSearch() {
+            doSparql(true);
+        }
+
+        function doSparql(runQuery) {
             var sparql = 'SELECT DISTINCT ?item ?itemLabel WHERE {\n';
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
@@ -250,7 +252,9 @@ window.onload = function () {
             }
             sparql += '\tSERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". ?item rdfs:label ?itemLabel. }\n}\nLIMIT 30';
 
-            var sparqlUrl = 'https://query.wikidata.org/embed.html#' + encodeURI(sparql);
+            var sparqlUrl = runQuery
+                ? 'https://query.wikidata.org/embed.html#' + encodeURI(sparql)
+                : 'https://query.wikidata.org/#' + encodeURI(sparql);
             window.open(sparqlUrl);
 
             // alert(sparql);
@@ -258,10 +262,8 @@ window.onload = function () {
 
         function rerenderUiRules() {
             $uirulelist.html('');
-            var searchableModel = false;
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
-                if ((item.type !== RuleType.PRESENT && item.type !== RuleType.NOT_PRESENT) || item.property !== PROP_INSTANCE_OF) searchableModel = true;
                 var $item = $('<li>');
                 $item.append($('<a>').attr('href', item.link).append($('<i>').text(item.caption)));
                 switch (item.type) {
@@ -290,8 +292,8 @@ window.onload = function () {
                 }
                 $uirulelist.append($item);
             }
-            $searchbtn.prop('disabled', !searchableModel);
             $clearbtn.prop('disabled', !model.length);
+            validateSearchability();
         }
 
         function renderTypeSelector(item, $container) {
@@ -323,19 +325,32 @@ window.onload = function () {
         function typeChanged() {
             var $select = $(this);
             var property = $select.data('wd-prop');
-            var selectedType = valueToRuleType[$select.val()];
+            var selectedType = +$select.val();
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
                 if (item.property === property) {
                     item.type = selectedType;
-                    // TODO: validateSearchability();
+                    validateSearchability();
                     return;
                 }
             }
         }
 
+        function validateSearchability() {
+            var searchableModel = false;
+            for (var i = 0; i < model.length; ++i) {
+                var item = model[i];
+                if ((item.type !== RuleType.PRESENT && item.type !== RuleType.NOT_PRESENT) || item.property !== PROP_INSTANCE_OF) {
+                    searchableModel = true;
+                    break;
+                }
+            }
+            $searchbtn.prop('disabled', !searchableModel);
+            $sparqlbtn.prop('disabled', !model.length);
+        }
+
         function renderOption(ruleType, currentType, $select) {
-            var $option = $('<option>', { value: ruleType.value }).text(ruleType.text).prop('selected', ruleType === currentType);
+            var $option = $('<option>', { value: ruleType }).text(msgs['type' + ruleType]).prop('selected', ruleType === currentType);
             $select.append($option);
         }
 
