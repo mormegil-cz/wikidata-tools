@@ -1,3 +1,5 @@
+/* global mediaWiki, jQuery */
+
 var wol = window.onload;
 window.onload = function () {
     if (typeof wol === 'function') wol();
@@ -20,9 +22,10 @@ window.onload = function () {
                 portlettooltip: 'Hledání dalších položek na základě této položky',
                 heading: 'Hledat podle této',
                 searchbtn: 'Hledat',
+                sparqlbtn: 'SPARQL',
                 clearbtn: 'Smazat vše',
                 clearconfirm: 'Opravdu smazat vše?',
-                sparqlbtn: 'SPARQL',
+                remove: '❌',
 
                 type1: 'je definováno',
                 type2: 'není definováno',
@@ -37,10 +40,11 @@ window.onload = function () {
                 portlettooltip: 'Search for other items based on this one',
                 heading: 'Search by this',
                 searchbtn: 'Search',
+                sparqlbtn: 'SPARQL',
                 clearbtn: 'Clear all',
                 clearconfirm: 'Really clear all?',
-                sparqlbtn: 'SPARQL',
-                
+                remove: '❌',
+
                 type1: 'is present',
                 type2: 'is not present',
                 type3: 'is equal to',
@@ -50,11 +54,11 @@ window.onload = function () {
                 type7: 'is none of',
             }
         };
-        var lang = 'cs';
+        var lang = $('html').attr('lang') || 'en';
         var msgs = i18n[lang] || i18n['en'];
 
-        var uiVisible = false;
         var model = [];
+        var $uibox = null;
         var $uirulelist = null;
         var $searchbtn = null;
         var $sparqlbtn = null;
@@ -65,6 +69,7 @@ window.onload = function () {
             if (!entityId) {
                 return;
             }
+
             var portletLink = mw.util.addPortletLink(
                 'p-tb',
                 '#',
@@ -75,19 +80,10 @@ window.onload = function () {
             $(portletLink).click(function (e) {
                 e.preventDefault();
 
-                if (uiVisible) return;
-                uiVisible = true;
+                if ($uibox) return;
 
-                var $uibox = $('<div class="sbt-uibox">');
-                $uibox.append($('<a href="#" class="sbt-close">').text('x').click(function () {
-                    uiVisible = false;
-                    $uibox.remove();
-                    $('.sbt-btn').remove();
-                    $uirulelist = null;
-                    $searchbtn = null;
-                    $clearbtn = null;
-                    return false;
-                }));
+                $uibox = $('<div class="sbt-uibox">');
+                $uibox.append($('<a href="#" class="sbt-close">').text('x').click(closeUibox));
                 $uibox.append($('<h3>').text(msgs.heading));
                 $uirulelist = $('<ul class="sbt-rulelist">');
                 $uibox.append($uirulelist);
@@ -115,9 +111,20 @@ window.onload = function () {
             });
         });
 
+        function closeUibox() {
+            $uibox.remove();
+            $uibox = null;
+            $('.sbt-btn').remove();
+            $uirulelist = null;
+            $searchbtn = null;
+            $sparqlbtn = null;
+            $clearbtn = null;
+        }
+
         function addProperty() {
             var $button = $(this);
             var $link = $button.parent().children('a').first();
+            // TODO: Instead of screenscraping, retrieve from JS data model
             var url = $link.attr('href');
             var property = getPropertyFromUrl(url);
             for (var i = 0; i < model.length; ++i) {
@@ -146,6 +153,7 @@ window.onload = function () {
         function addItemValue() {
             var $button = $(this);
             var $entityLink = $button.parent().children('a').first();
+            // TODO: Instead of screenscraping, retrieve from JS data model
             var entityUrl = $entityLink.attr('href');
             var entity = getEntityFromUrl(entityUrl);
             var $propertyLink = $button.closest('.wikibase-statementgroupview').find('.wikibase-statementgroupview-property-label').children('a').first();
@@ -210,6 +218,7 @@ window.onload = function () {
         }
 
         function doSparql(runQuery) {
+            // TODO: DISTINCT enable/disable?
             var sparql = 'SELECT DISTINCT ?item ?itemLabel WHERE {\n';
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
@@ -265,18 +274,23 @@ window.onload = function () {
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
                 var $item = $('<li>');
+                $item.data('idx', i);
                 $item.append($('<a>').attr('href', item.link).append($('<i>').text(item.caption)));
+                renderTypeSelector(item, $item);
+                var $removeBtn = $('<a>').text(msgs.remove).click(removeRule);
+                // TODO: "show value in result" switch for NOT_EQUAL, ANY_OF, NONE_OF, PRESENT
                 switch (item.type) {
                     case RuleType.EQUAL:
                     case RuleType.NOT_EQUAL:
-                        renderTypeSelector(item, $item);
-                        $item.append(' ');
                         renderSingleValue(item.values[0], $item);
+                        $item.append(' ');
+                        $item.append($removeBtn);
                         break;
                     case RuleType.ANY_OF:
                     case RuleType.ALL_OF:
                     case RuleType.NONE_OF:
-                        renderTypeSelector(item, $item);
+                        $item.append(' ');
+                        $item.append($removeBtn);
                         var $values = $('<ul>');
                         $item.append($values);
                         for (var j = 0; j < item.values.length; ++j) {
@@ -287,13 +301,21 @@ window.onload = function () {
                         break;
                     case RuleType.PRESENT:
                     case RuleType.NOT_PRESENT:
-                        renderTypeSelector(item, $item);
+                        $item.append(' ');
+                        $item.append($removeBtn);
                         break;
                 }
                 $uirulelist.append($item);
             }
             $clearbtn.prop('disabled', !model.length);
             validateSearchability();
+        }
+
+        function removeRule() {
+            var $rule = $(this).closest('li');
+            var idx = +$rule.data('idx');
+            model.splice(idx, 1);
+            rerenderUiRules();
         }
 
         function renderTypeSelector(item, $container) {

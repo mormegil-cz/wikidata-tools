@@ -11,3 +11,7 @@
 .sbt-close {
     float: right;
 }
+
+.sbt-uibox h3 {
+    padding-top: 0;
+}
