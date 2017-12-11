@@ -218,48 +218,63 @@ window.onload = function () {
         }
 
         function doSparql(runQuery) {
-            // TODO: DISTINCT enable/disable?
-            var sparql = 'SELECT DISTINCT ?item ?itemLabel WHERE {\n';
+            var positivePatterns = [];
+            var negativePatterns = [];
             for (var i = 0; i < model.length; ++i) {
                 var item = model[i];
                 switch (item.type) {
+                    case RuleType.ALL_OF:
+                        var values = ['\t?item wdt:', item.property, ' '];
+                        for (var k = 0; k < item.values.length; ++k) {
+                            if (k > 0) values.push(', ');
+                            values.push(item.values[j].sparql);
+                        }
+                        positivePatterns.push(values.join(''));
+                        break;
+
                     case RuleType.EQUAL:
                     case RuleType.NOT_EQUAL:
                     case RuleType.ANY_OF:
-                    case RuleType.ALL_OF:
                     case RuleType.NONE_OF:
                         var noneOfType = item.type === RuleType.NONE_OF;
                         var negativeType = noneOfType || item.type === RuleType.NOT_EQUAL;
                         var cumulativeType = noneOfType || item.type === RuleType.ANY_OF;
                         var anyOfType = item.type === RuleType.ANY_OF;
                         var typeWithBlock = negativeType || anyOfType;
-                        if (negativeType) sparql += '\tMINUS {\n';
-                        else if (anyOfType) sparql += '\t{\n';
+                        var pattern = '';
+                        if (negativeType) pattern += '\tMINUS {\n';
+                        else if (anyOfType) pattern += '\t{\n';
                         var tabs = typeWithBlock ? '\t\t' : '\t';
 
                         for (var j = 0; j < item.values.length; ++j) {
-                            var value = item.values[j];
-                            sparql += tabs;
+                            pattern += tabs;
                             if (cumulativeType) {
-                                if (j > 0) sparql += 'OR ';
-                                sparql += '{ ';
+                                if (j > 0) pattern += 'OR ';
+                                pattern += '{ ';
                             }
-                            sparql += '?item wdt:' + item.property + ' ' + value.sparql;
-                            if (cumulativeType) sparql += ' }\n';
-                            else sparql += ' .\n';
+                            pattern += '?item wdt:' + item.property + ' ' + item.values[j].sparql;
+                            if (cumulativeType) pattern += ' }\n';
+                            else pattern += ' .\n';
                         }
 
-                        if (typeWithBlock) sparql += '\t}\n';
+                        if (typeWithBlock) pattern += '\t}\n';
+                        (negativeType ? negativePatterns : positivePatterns).push(pattern);
                         break;
                     case RuleType.PRESENT:
-                        sparql += '\t?item wdt:' + item.property + ' ?any' + item.property + ' .\n';
+                        positivePatterns.push('\t?item wdt:' + item.property + ' ?any' + item.property + ' .\n');
                         break;
                     case RuleType.NOT_PRESENT:
-                        sparql += '\tMINUS { ?item wdt:' + item.property + ' ?any' + item.property + ' }\n';
+                        negativePatterns.push('\tMINUS { ?item wdt:' + item.property + ' ?any' + item.property + ' }\n');
                         break;
                 }
             }
-            sparql += '\tSERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". ?item rdfs:label ?itemLabel. }\n}\nLIMIT 30';
+
+            // TODO: DISTINCT enable/disable?
+            var sparql =
+                'SELECT DISTINCT ?item ?itemLabel WHERE {\n'
+                + positivePatterns.join('')
+                + negativePatterns.join('')
+                + '\tSERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". ?item rdfs:label ?itemLabel. }\n}\nLIMIT 30';
 
             var sparqlUrl = runQuery
                 ? 'https://query.wikidata.org/embed.html#' + encodeURI(sparql)
@@ -307,7 +322,9 @@ window.onload = function () {
                 }
                 $uirulelist.append($item);
             }
-            $clearbtn.prop('disabled', !model.length);
+            var noRules = !model.length;
+            $sparqlbtn.prop('disabled', noRules);
+            $clearbtn.prop('disabled', noRules);
             validateSearchability();
         }
 
@@ -360,15 +377,24 @@ window.onload = function () {
 
         function validateSearchability() {
             var searchableModel = false;
-            for (var i = 0; i < model.length; ++i) {
+            for (var i = 0; !searchableModel && i < model.length; ++i) {
                 var item = model[i];
-                if ((item.type !== RuleType.PRESENT && item.type !== RuleType.NOT_PRESENT) || item.property !== PROP_INSTANCE_OF) {
-                    searchableModel = true;
-                    break;
+                switch (item.type) {
+                    case RuleType.PRESENT:
+                        if (item.property !== PROP_INSTANCE_OF) searchableModel = true;
+                        break;
+                    case RuleType.ALL_OF:
+                    case RuleType.ANY_OF:
+                    case RuleType.EQUAL:
+                        searchableModel = true;
+                        break;
+                    case RuleType.NOT_PRESENT:
+                    case RuleType.NONE_OF:
+                    case RuleType.NOT_EQUAL:
+                        break;
                 }
             }
             $searchbtn.prop('disabled', !searchableModel);
-            $sparqlbtn.prop('disabled', !model.length);
         }
 
         function renderOption(ruleType, currentType, $select) {
