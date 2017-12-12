@@ -344,7 +344,16 @@ window.onload = function () {
             var $rule = $value.parent().closest('li');
             var valueIdx = +$value.data('idx');
             var ruleIdx = +$rule.data('idx');
-            model[ruleIdx].values.splice(valueIdx, 1);
+            var rule = model[ruleIdx];
+            rule.values.splice(valueIdx, 1);
+            switch(rule.values.length) {
+                case 0:
+                    rule.type = rule.type === RuleType.EQUAL ? RuleType.PRESENT : RuleType.NOT_PRESENT;
+                    break;
+                case 1:
+                    rule.type = rule.type === RuleType.NONE_OF ? RuleType.NOT_EQUAL : RuleType.EQUAL;
+                    break;
+            }
             rerenderUiRules();
         }
 
