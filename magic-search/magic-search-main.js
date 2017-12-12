@@ -164,7 +164,7 @@
         if (existingItem && existingItem.values && existingItem.values.length) {
             for (var j = 0; j < existingItem.values.length; ++j) {
                 var value = existingItem.values[j];
-                if (value.type ===  value.link === entityUrl) {
+                if (value.link === entityUrl) {
                     return;
                 }
             }
