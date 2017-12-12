@@ -106,7 +106,7 @@ window.onload = function () {
                 $(document.body).append($uibox);
 
                 $('.wikibase-statementgroupview-property-label').append($('<button class="sbt-btn">+</button>').click(addProperty));
-                $('.wikibase-snakview-variation-valuesnak a[href^="/wiki/Q"]').after($('<button class="sbt-btn">+</button>').click(addItemValue));
+                $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-valuesnak a[href^="/wiki/Q"]').after($('<button class="sbt-btn">+</button>').click(addItemValue));
                 // TODO: .wikibase-snakview-variation-novaluesnak, .wikibase-snakview-variation-somevaluesnak
             });
         });
