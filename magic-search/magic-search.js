@@ -168,7 +168,7 @@ window.onload = function () {
             }
             if (existingItem && existingItem.values && existingItem.values.length) {
                 for (var j = 0; j < existingItem.values.length; ++j) {
-                    var value = existingItem.values[i];
+                    var value = existingItem.values[j];
                     if (value.link === entityUrl) {
                         return;
                     }
