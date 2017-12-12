@@ -12,6 +12,11 @@
         NONE_OF: 7
         // TODO: DIFFERENT_THAN, DIFFERENT_THAN_ALL_OF
     });
+    var ValueType = Object.freeze({
+        VALUE: 1,
+        NOVALUE: 2,
+        SOMEVALUE: 3
+    });
     var i18n = {
         cs: {
             portletlink: 'Hledat podle této',
@@ -96,7 +101,8 @@
 
         $('.wikibase-statementgroupview-property-label').append($('<button class="sbt-btn">+</button>').click(addProperty));
         $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-valuesnak a[href^="/wiki/Q"]').after($('<button class="sbt-btn">+</button>').click(addItemValue));
-        // TODO: .wikibase-snakview-variation-novaluesnak, .wikibase-snakview-variation-somevaluesnak
+        $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-novaluesnak').append($('<button class="sbt-btn">+</button>').click(addNoValue));
+        $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-somevaluesnak').append($('<button class="sbt-btn">+</button>').click(addSomeValue));
     }
 
     function clearModel() {
@@ -164,12 +170,13 @@
         if (existingItem && existingItem.values && existingItem.values.length) {
             for (var j = 0; j < existingItem.values.length; ++j) {
                 var value = existingItem.values[j];
-                if (value.link === entityUrl) {
+                if (value.type === ValueType.VALUE && value.link === entityUrl) {
                     return;
                 }
             }
         }
         var newValue = {
+            type: ValueType.VALUE,
             link: entityUrl,
             caption: $entityLink.text(),
             sparql: 'wd:' + entity
@@ -202,6 +209,69 @@
             }
         }
         rerenderUiRules();
+    }
+
+    function addSpecialValue($button, type) {
+        var $noValueSpan = $button.parent().children('.wikibase-snakview-variation-novaluesnak').first();
+        var $propertyLink = $button.closest('.wikibase-statementgroupview').find('.wikibase-statementgroupview-property-label').children('a').first();
+        // TODO: Instead of screenscraping, retrieve from JS data model
+        var propertyUrl = $propertyLink.attr('href');
+        var property = getPropertyFromUrl(propertyUrl);
+        var existingItem = null;
+        for (var i = 0; i < model.length; ++i) {
+            if (model[i].property === property) {
+                existingItem = model[i];
+                break;
+            }
+        }
+        if (existingItem && existingItem.values && existingItem.values.length) {
+            for (var j = 0; j < existingItem.values.length; ++j) {
+                var value = existingItem.values[j];
+                if (value.type === type) {
+                    return;
+                }
+            }
+        }
+        var newValue = {
+            type: type,
+            caption: $noValueSpan.text()
+        };
+        if (!existingItem) {
+            model.push({
+                property: property,
+                link: propertyUrl,
+                caption: $propertyLink.text(),
+                type: RuleType.EQUAL,
+                values: [newValue]
+            });
+        } else {
+            existingItem.values = (existingItem.values || []);
+            existingItem.values.push(newValue);
+
+            switch (existingItem.type) {
+                case RuleType.EQUAL:
+                    existingItem.type = RuleType.ALL_OF;
+                    break;
+                case RuleType.NOT_EQUAL:
+                    existingItem.type = RuleType.NONE_OF;
+                    break;
+                case RuleType.PRESENT:
+                    existingItem.type = RuleType.EQUAL;
+                    break;
+                case RuleType.NOT_PRESENT:
+                    existingItem.type = RuleType.NOT_EQUAL;
+                    break;
+            }
+        }
+        rerenderUiRules();
+    }
+
+    function addNoValue() {
+        addSpecialValue($(this), ValueType.NOVALUE);
+    }
+
+    function addSomeValue() {
+        addSpecialValue($(this), ValueType.SOMEVALUE);
     }
 
     function editSparql() {
@@ -263,6 +333,16 @@
                     break;
             }
         }
+
+        /*
+        somevalue:
+
+        ?item wdt:P449 ?someP449 .
+        MINUS { ?someP449 rdfs:label ?nP449Label }
+
+        novalue:
+        ?item a wdno:P449 .
+        */
 
         // TODO: DISTINCT enable/disable?
         var sparql =
