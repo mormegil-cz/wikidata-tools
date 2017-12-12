@@ -310,7 +310,11 @@ window.onload = function () {
                         $item.append($values);
                         for (var j = 0; j < item.values.length; ++j) {
                             var $value = $('<li>');
+                            $value.data('idx', j);
                             renderSingleValue(item.values[j], $value);
+                            var $valueRemoveBtn = $('<a>').text(msgs.remove).click(removeValue);
+                            $value.append(' ');
+                            $value.append($valueRemoveBtn);
                             $values.append($value);
                         }
                         break;
@@ -332,6 +336,15 @@ window.onload = function () {
             var $rule = $(this).closest('li');
             var idx = +$rule.data('idx');
             model.splice(idx, 1);
+            rerenderUiRules();
+        }
+
+        function removeValue() {
+            var $value = $(this).closest('li');
+            var $rule = $value.parent().closest('li');
+            var valueIdx = +$value.data('idx');
+            var ruleIdx = +$rule.data('idx');
+            model[ruleIdx].values.splice(valueIdx, 1);
             rerenderUiRules();
         }
 
