@@ -32,7 +32,7 @@ window.onload = function () {
                 $uibox.append($('<img src="https://upload.wikimedia.org/wikipedia/commons/f/f8/Ajax-loader%282%29.gif" />'));
                 $(document.body).append($uibox);
 
-                mw.loader.load('https://cdn.rawgit.com/mormegil-cz/wikidata-tools/0.1/magic-search/magic-search-main.js');
+                mw.loader.load('https://rawgit.com/mormegil-cz/wikidata-tools/master/magic-search/magic-search-main.js');
             });
         });
     })(mediaWiki, jQuery);

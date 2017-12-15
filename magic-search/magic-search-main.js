@@ -101,8 +101,8 @@
 
         $('.wikibase-statementgroupview-property-label').append($('<button class="sbt-btn">+</button>').click(addProperty));
         $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-valuesnak a[href^="/wiki/Q"]').after($('<button class="sbt-btn">+</button>').click(addItemValue));
-        $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-novaluesnak').append($('<button class="sbt-btn">+</button>').click(addNoValue));
-        $('.wikibase-statementview-mainsnak .wikibase-snakview-variation-somevaluesnak').append($('<button class="sbt-btn">+</button>').click(addSomeValue));
+        $('.wikibase-statementview-mainsnak .wikibase-snakview-value.wikibase-snakview-variation-novaluesnak').append($('<button class="sbt-btn">+</button>').click(addNoValue));
+        $('.wikibase-statementview-mainsnak .wikibase-snakview-value.wikibase-snakview-variation-somevaluesnak').append($('<button class="sbt-btn">+</button>').click(addSomeValue));
     }
 
     function clearModel() {
@@ -290,11 +290,34 @@
             switch (item.type) {
                 case RuleType.ALL_OF:
                     var values = ['\t?item wdt:', item.property, ' '];
+                    var requireSomeValue = false;
+                    var requireNoValue = false;
+                    var valueListCount = 0;
                     for (var k = 0; k < item.values.length; ++k) {
-                        if (k > 0) values.push(', ');
-                        values.push(item.values[j].sparql);
+                        if (valueListCount > 0) values.push(', ');
+                        var valueK = item.values[k];
+                        switch (valueK.type) {
+                            case ValueType.VALUE:
+                                values.push(valueK.sparql);
+                                ++valueListCount;
+                                break;
+                            case ValueType.SOMEVALUE:
+                                requireSomeValue = true;
+                                break;
+                            case ValueType.NOVALUE:
+                                requireNoValue = true;
+                                break;
+                        }
                     }
+                    values.push(' .\n');
                     positivePatterns.push(values.join(''));
+                    if (requireNoValue) {
+                        positivePatterns.push('?item a wdno:' + item.property + ' .\n');
+                    }
+                    if (requireSomeValue) {
+                        positivePatterns.push('?item wdt:' + item.property + ' ?some' + item.property + ' .\n');
+                        positivePatterns.push('MINUS { ?some' + item.property + ' rdfs:label [] }\n');
+                    }
                     break;
 
                 case RuleType.EQUAL:
@@ -312,12 +335,24 @@
                     var tabs = typeWithBlock ? '\t\t' : '\t';
 
                     for (var j = 0; j < item.values.length; ++j) {
+                        var valueJ = item.values[j];
                         pattern += tabs;
                         if (cumulativeType) {
                             if (j > 0) pattern += 'OR ';
                             pattern += '{ ';
                         }
-                        pattern += '?item wdt:' + item.property + ' ' + item.values[j].sparql;
+                        switch (valueJ.type) {
+                            case ValueType.VALUE:
+                                pattern += '?item wdt:' + item.property + ' ' + valueJ.sparql;
+                                break;
+                            case ValueType.NOVALUE:
+                                pattern += '?item a wdno:' + item.property;
+                                break;
+                            case ValueType.SOMEVALUE:
+                                pattern += '?item wdt:' + item.property + ' ?some' + item.property + ' .\n';
+                                pattern += 'MINUS { ?some' + item.property + ' rdfs:label [] }\n';
+                                break;
+                        }
                         if (cumulativeType) pattern += ' }\n';
                         else pattern += ' .\n';
                     }
@@ -333,16 +368,6 @@
                     break;
             }
         }
-
-        /*
-        somevalue:
-
-        ?item wdt:P449 ?someP449 .
-        MINUS { ?someP449 rdfs:label ?nP449Label }
-
-        novalue:
-        ?item a wdno:P449 .
-        */
 
         // TODO: DISTINCT enable/disable?
         var sparql =
@@ -498,10 +523,20 @@
     }
 
     function renderSingleValue(value, $container) {
-        if (value.link) {
-            $container.append($('<a>').attr('href', value.link).append($('<i>').text(value.caption)));
-        } else {
-            $container.append($('<i>').text(value.caption));
+        switch (value.type) {
+            case ValueType.VALUE:
+                if (value.link) {
+                    $container.append($('<a>').attr('href', value.link).append($('<i>').text(value.caption)));
+                } else {
+                    $container.append($('<i>').text(value.caption));
+                }
+                break;
+            case ValueType.NOVALUE:
+                $container.append($('<span>').attr('class', 'wikibase-snakview-variation-novaluesnak').text(value.caption));
+                break;
+            case ValueType.SOMEVALUE:
+                $container.append($('<span>').attr('class', 'wikibase-snakview-variation-somevaluesnak').text(value.caption));
+                break;
         }
     }
 })(jQuery);
