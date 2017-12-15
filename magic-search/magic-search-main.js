@@ -355,6 +355,7 @@
                             case ValueType.SOMEVALUE:
                                 if (cumulativeType) pattern += '\n';
                                 pattern += tabs;
+                                if (cumulativeType) pattern += '\t';
                                 pattern += '?item wdt:' + item.property + ' ?some' + item.property + ' .\n';
                                 pattern += tabs;
                                 if (cumulativeType) pattern += '\t';
