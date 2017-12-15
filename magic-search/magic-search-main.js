@@ -212,7 +212,7 @@
     }
 
     function addSpecialValue($button, type) {
-        var $noValueSpan = $button.parent().children('.wikibase-snakview-variation-novaluesnak').first();
+        var $noValueSpan = $button.parent().children('span').first();
         var $propertyLink = $button.closest('.wikibase-statementgroupview').find('.wikibase-statementgroupview-property-label').children('a').first();
         // TODO: Instead of screenscraping, retrieve from JS data model
         var propertyUrl = $propertyLink.attr('href');
@@ -339,28 +339,32 @@
                         var valueJ = item.values[j];
                         pattern += tabs;
                         if (cumulativeType) {
-                            if (j > 0) pattern += 'OR ';
+                            if (j > 0) pattern += 'UNION ';
                             pattern += '{ ';
                         }
+                        var needsDot;
                         switch (valueJ.type) {
                             case ValueType.VALUE:
                                 pattern += '?item wdt:' + item.property + ' ' + valueJ.sparql;
+                                needsDot = true;
                                 break;
                             case ValueType.NOVALUE:
                                 pattern += '?item a wdno:' + item.property;
+                                needsDot = true;
                                 break;
                             case ValueType.SOMEVALUE:
-                                pattern += '\n';
+                                if (cumulativeType) pattern += '\n';
                                 pattern += tabs;
                                 pattern += '?item wdt:' + item.property + ' ?some' + item.property + ' .\n';
                                 pattern += tabs;
                                 if (cumulativeType) pattern += '\t';
                                 pattern += 'MINUS { ?some' + item.property + ' rdfs:label [] }\n';
                                 pattern += tabs;
+                                needsDot = false;
                                 break;
                         }
                         if (cumulativeType) pattern += ' }\n';
-                        else pattern += ' .\n';
+                        else if (needsDot) pattern += ' .\n';
                     }
 
                     if (typeWithBlock) pattern += '\t}\n';
