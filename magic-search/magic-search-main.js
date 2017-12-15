@@ -289,17 +289,16 @@
             var item = model[i];
             switch (item.type) {
                 case RuleType.ALL_OF:
-                    var values = ['\t?item wdt:', item.property, ' '];
                     var requireSomeValue = false;
                     var requireNoValue = false;
-                    var valueListCount = 0;
+                    var values = [];
                     for (var k = 0; k < item.values.length; ++k) {
-                        if (valueListCount > 0) values.push(', ');
                         var valueK = item.values[k];
                         switch (valueK.type) {
                             case ValueType.VALUE:
+                                if (values.length) values.push(', ');
+                                else values.push('\t?item wdt:', item.property, ' ');
                                 values.push(valueK.sparql);
-                                ++valueListCount;
                                 break;
                             case ValueType.SOMEVALUE:
                                 requireSomeValue = true;
@@ -309,14 +308,16 @@
                                 break;
                         }
                     }
-                    values.push(' .\n');
-                    positivePatterns.push(values.join(''));
+                    if (values.length) {
+                        values.push(' .\n');
+                        positivePatterns.push(values.join(''));
+                    }
                     if (requireNoValue) {
-                        positivePatterns.push('?item a wdno:' + item.property + ' .\n');
+                        positivePatterns.push('\t?item a wdno:' + item.property + ' .\n');
                     }
                     if (requireSomeValue) {
-                        positivePatterns.push('?item wdt:' + item.property + ' ?some' + item.property + ' .\n');
-                        positivePatterns.push('MINUS { ?some' + item.property + ' rdfs:label [] }\n');
+                        positivePatterns.push('\t?item wdt:' + item.property + ' ?some' + item.property + ' .\n');
+                        positivePatterns.push('\tMINUS { ?some' + item.property + ' rdfs:label [] }\n');
                     }
                     break;
 
@@ -349,8 +350,13 @@
                                 pattern += '?item a wdno:' + item.property;
                                 break;
                             case ValueType.SOMEVALUE:
+                                pattern += '\n';
+                                pattern += tabs;
                                 pattern += '?item wdt:' + item.property + ' ?some' + item.property + ' .\n';
+                                pattern += tabs;
+                                if (cumulativeType) pattern += '\t';
                                 pattern += 'MINUS { ?some' + item.property + ' rdfs:label [] }\n';
+                                pattern += tabs;
                                 break;
                         }
                         if (cumulativeType) pattern += ' }\n';
