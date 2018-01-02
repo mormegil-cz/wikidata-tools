@@ -17,6 +17,18 @@
         NOVALUE: 2,
         SOMEVALUE: 3
     });
+    var recursiveDefinitions = Object.freeze({
+        // more complicated cases:
+        // - instance of -> subclass of
+        'P31': '/wdt:P279*',
+        // plain recursion:
+        // - located in the administrative territorial entity
+        'P131': '+',
+        // - named after
+        'P138': '+',
+        // - subclass of
+        'P272': '+'
+    });
     var i18n = {
         cs: {
             portletlink: 'Hledat podle této',
@@ -177,9 +189,11 @@
         }
         var newValue = {
             type: ValueType.VALUE,
+            entity: entity,
             link: entityUrl,
             caption: $entityLink.text(),
-            sparql: 'wd:' + entity
+            sparql: 'wd:' + entity,
+            recursive: ''
         };
         if (!existingItem) {
             model.push({
@@ -288,7 +302,8 @@
         for (var i = 0; i < model.length; ++i) {
             var item = model[i];
             switch (item.type) {
-                case RuleType.ALL_OF:
+                case false:
+                //case RuleType.ALL_OF:
                     var requireSomeValue = false;
                     var requireNoValue = false;
                     var values = [];
@@ -323,6 +338,7 @@
 
                 case RuleType.EQUAL:
                 case RuleType.NOT_EQUAL:
+                case RuleType.ALL_OF:
                 case RuleType.ANY_OF:
                 case RuleType.NONE_OF:
                     var noneOfType = item.type === RuleType.NONE_OF;
@@ -345,7 +361,7 @@
                         var needsDot;
                         switch (valueJ.type) {
                             case ValueType.VALUE:
-                                pattern += '?item wdt:' + item.property + ' ' + valueJ.sparql;
+                                pattern += '?item wdt:' + item.property + valueJ.recursive + ' ' + valueJ.sparql;
                                 needsDot = true;
                                 break;
                             case ValueType.NOVALUE:
@@ -406,7 +422,7 @@
             switch (item.type) {
                 case RuleType.EQUAL:
                 case RuleType.NOT_EQUAL:
-                    renderSingleValue(item.values[0], $item);
+                    renderSingleValue(item, item.values[0], $item);
                     $item.append(' ');
                     $item.append($removeBtn);
                     break;
@@ -420,7 +436,7 @@
                     for (var j = 0; j < item.values.length; ++j) {
                         var $value = $('<li>');
                         $value.data('idx', j);
-                        renderSingleValue(item.values[j], $value);
+                        renderSingleValue(item, item.values[j], $value);
                         var $valueRemoveBtn = $('<a>').text(msgs.remove).click(removeValue);
                         $value.append(' ');
                         $value.append($valueRemoveBtn);
@@ -506,6 +522,25 @@
         }
     }
 
+    function recursionChanged() {
+        var $checkBox = $(this);
+        var property = $checkBox.data('wd-prop');
+        var value = $checkBox.data('wd-value');
+        for (var i = 0; i < model.length; ++i) {
+            var item = model[i];
+            if (item.property === property) {
+                for (var j = 0; j < item.values.length; ++j) {
+                    var valueJ = item.values[j];
+                    if (valueJ.entity === value) {
+                        valueJ.recursive = this.checked ? recursiveDefinitions[property] : '';
+                        return;
+                    }
+                }
+                return;
+            }
+        }
+    }
+
     function validateSearchability() {
         var searchableModel = false;
         for (var i = 0; !searchableModel && i < model.length; ++i) {
@@ -533,11 +568,17 @@
         $select.append($option);
     }
 
-    function renderSingleValue(value, $container) {
+    function renderSingleValue(item, value, $container) {
         switch (value.type) {
             case ValueType.VALUE:
                 if (value.link) {
                     $container.append($('<a>').attr('href', value.link).append($('<i>').text(value.caption)));
+                    if (recursiveDefinitions[item.property]) {
+                        var cbId = 'sbt-subtree-' + item.property + '-' + value.entity;
+                        $container.append(' ');
+                        $container.append($('<input type="checkbox" class="sbt-subtree" />').attr('id', cbId).data({ 'wd-prop': item.property, 'wd-value': value.entity }).change(recursionChanged));
+                        $container.append($('<label />').attr('for', cbId));
+                    }
                 } else {
                     $container.append($('<i>').text(value.caption));
                 }

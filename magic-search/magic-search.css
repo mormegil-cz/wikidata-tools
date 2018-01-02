@@ -15,3 +15,22 @@
 .sbt-uibox h3 {
     padding-top: 0;
 }
+
+.sbt-subtree {
+    display:none;
+}
+
+.sbt-subtree + label{
+    background:url('https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Nuvola_apps_ipo.svg/20px-Nuvola_apps_ipo.svg.png') no-repeat 2px 2px;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    padding: 2px;
+    border: 1px outset;
+    border-radius: 2px;
+}
+
+.sbt-subtree:checked + label{
+    background-color: darkgray;
+    border: 1px inset;
+}
