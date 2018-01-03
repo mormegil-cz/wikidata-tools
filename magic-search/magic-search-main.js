@@ -22,12 +22,28 @@
         // - instance of -> subclass of
         'P31': '/wdt:P279*',
         // plain recursion:
+        // - child
+        'P40': '+',
         // - located in the administrative territorial entity
         'P131': '+',
         // - named after
         'P138': '+',
+        // - parent taxon
+        'P171': '+',
+        // - location
+        'P276': '+',
         // - subclass of
-        'P272': '+'
+        'P279': '+',
+        // - part of
+        'P361': '+',
+        // - mouth of the watercourse
+        'P403': '+',
+        // - said to be the same as
+        'P460': '+',
+        // - has part
+        'P527': '+',
+        // - anatomical location
+        'P927': '+'
     });
     var i18n = {
         cs: {
@@ -46,7 +62,7 @@
             type4: 'není rovno',
             type5: 'je libovolné z',
             type6: 'je všechno z',
-            type7: 'je žádné z',
+            type7: 'je žádné z'
         },
         en: {
             portletlink: 'Search by this',
@@ -64,7 +80,7 @@
             type4: 'is not equal to',
             type5: 'is any of',
             type6: 'is all of',
-            type7: 'is none of',
+            type7: 'is none of'
         }
     };
     var lang = $('html').attr('lang') || 'en';
