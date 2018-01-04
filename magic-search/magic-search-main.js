@@ -18,32 +18,62 @@
         SOMEVALUE: 3
     });
     var recursiveDefinitions = Object.freeze({
-        // more complicated cases:
-        // - instance of -> subclass of
-        'P31': '/wdt:P279*',
+        // complicated cases:
+        // - (father | mother)* father
+        'P22': '(wdt:P22|wdt:P25)*/wdt:P22',
+        // - (father | mother)* mother
+        'P25': '(wdt:P22|wdt:P25)*/wdt:P25',
+        // - lake inflow / origin of the watercourse / tributary
+        'P200': '(wdt:P200|wdt:P885|wdt:P974)+',
+        // - lake outflow / mouth of the watercourse
+        'P201': '(wdt:P201|wdt:P403)+',
+        // - mouth of the watercourse / lake outflow
+        'P403': '(wdt:P201|wdt:P403)+',
+        // - origin of the watercourse / lake inflow / tributary
+        'P885': '(wdt:P200|wdt:P885|wdt:P974)+',
+        // - tributary / lake inflow / origin of the watercourse
+        'P974': '(wdt:P200|wdt:P885|wdt:P974)+',
+        // apply subclasses:
+        // - instance of
+        'P31': 'wdt:P31/wdt:P279*',
+        // - canonization status
+        'P411': 'wdt:P411/wdt:P279*',
+        // apply "said to be the same as"
+        // - family name
+        'P734': 'wdt:P734/wdt:P460*',
+        // - given name
+        'P735': 'wdt:P735/wdt:P460*',
         // plain recursion:
         // - child
-        'P40': '+',
+        'P40': 'wdt:P40+',
         // - located in the administrative territorial entity
-        'P131': '+',
+        'P131': 'wdt:P131+',
         // - named after
-        'P138': '+',
+        'P138': 'wdt:P138+',
         // - parent taxon
-        'P171': '+',
+        'P171': 'wdt:P171+',
         // - location
-        'P276': '+',
+        'P276': 'wdt:P276+',
         // - subclass of
-        'P279': '+',
+        'P279': 'wdt:P279+',
         // - part of
-        'P361': '+',
-        // - mouth of the watercourse
-        'P403': '+',
+        'P361': 'wdt:P361+',
         // - said to be the same as
-        'P460': '+',
+        'P460': 'wdt:P460+',
         // - has part
-        'P527': '+',
+        'P527': 'wdt:P527+',
         // - anatomical location
-        'P927': '+'
+        'P927': 'wdt:P927+',
+        // - relative
+        'P1038': 'wdt:P1038+',
+        // - equivalent class
+        'P1709': 'wdt:P1709+',
+        // - exact match
+        'P2888': 'wdt:P2888+',
+        // - sibling
+        'P3373': 'wdt:P3373+',
+        // - step parent
+        'P3448': 'wdt:P3448+'
     });
     var i18n = {
         cs: {
@@ -377,7 +407,7 @@
                         var needsDot;
                         switch (valueJ.type) {
                             case ValueType.VALUE:
-                                pattern += '?item wdt:' + item.property + valueJ.recursive + ' ' + valueJ.sparql;
+                                pattern += '?item ' + (valueJ.recursive ? valueJ.recursive : ('wdt:' + item.property)) + ' ' + valueJ.sparql;
                                 needsDot = true;
                                 break;
                             case ValueType.NOVALUE:
