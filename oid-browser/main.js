@@ -46,10 +46,13 @@ $(function () {
 
         for (var i = 0; i < queryData.length; ++i) {
             var item = queryData[i];
-            var id = qidFromUrl(item.item);
-            var url = 'https://www.wikidata.org/wiki/' + id;
-            var label = item.itemLabel;
-            var oid = item.oid;
+
+            var qid = qidFromUrl(item.item.value);
+            var label = item.itemLabel.value;
+            var oid = item.oid.value;
+
+            var id = qid + '-' + oid;
+            var url = 'https://www.wikidata.org/wiki/' + qid;
 
             var node = nodes[oid];
             if (node) {
@@ -83,14 +86,19 @@ $(function () {
     }
 
     $.ajax({
-        url: 'query-oid.json',
+        url: 'https://query.wikidata.org/sparql',
+        data: {
+            query: 'SELECT ?item ?itemLabel ?oid WHERE { ?item wdt:P3743 ?oid. SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }',
+            format: 'json'
+        },
+        dataType: 'json'
     }).done(function (queryData) {
-        var treeData = buildTree(queryData);
+        var treeData = buildTree(queryData.results.bindings);
         $('#tree-container').empty().jstree({
             'core': {
                 'data': treeData
             }
-        }).on("activate_node.jstree", function(e, data) {
+        }).on("activate_node.jstree", function (e, data) {
             var url = data.node.original.url;
             if (url) {
                 window.open(url);
