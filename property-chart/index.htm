@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Wikidata property usage chart</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <aside id="panel">
+        <h3>Wikidata property usage chart</h3>
+
+        <p>
+            <label for="frmProperty">Property:</label>
+            P<input id="frmProperty" type="number" value="698" size="6" maxlength="5" />
+        </p>
+
+        <p>
+            <label for="frmInterval">Interval:</label>
+            <select id="frmInterval">
+                <option value="D">day</option>
+                <option value="W">week</option>
+                <option value="2W">2 weeks</option>
+                <option value="M">month</option>
+                <option value="3M">3 months</option>
+                <option value="6M">6 months</option>
+                <option value="1Y">year</option>
+            </select>
+        </p>
+
+        <button id="btnRender">Render chart</button>
+    </aside>
+    <main id="chart">
+        <div id="canvas">
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/vega@5.17.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.12.2"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
