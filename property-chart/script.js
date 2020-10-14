@@ -15,7 +15,7 @@
     function downloadData(propertyNumber, interval, maxItems, resultCallback, errorCallback) {
         var maxTimestamp = null;
         var results = [];
-        var regexp = RegExp('\\|' + propertyNumber + '=([0-9]+)');
+        var regexp = RegExp('\\| statcount = ([0-9]+)');
 
         function advance(data) {
             var pageData = data && data.query && data.query.pages && data.query.pages[Object.keys(data.query.pages)[0]];
@@ -53,9 +53,9 @@
 
         function requestNext() {
             if (maxTimestamp) {
-                httpRequest('https://www.wikidata.org/w/api.php?action=query&format=json&origin=*&prop=revisions&generator=allpages&rvprop=timestamp%7Ccontent%7Cids&rvlimit=1&rvuser=PLbot&gapfrom=Property_uses&gapto=Property_uses&gapnamespace=10&rvstart=' + encodeURIComponent(maxTimestamp.toISOString()), advance, errorCallback);
+                httpRequest('https://www.wikidata.org/w/api.php?action=query&format=json&origin=*&prop=revisions&generator=allpages&rvprop=timestamp%7Ccontent%7Cids&rvlimit=1&rvuser=ListeriaBot&gapfrom=Statistics/count/P' + propertyNumber + 'distinct&gapto=Statistics/count/P' + propertyNumber + 'distinct&gapnamespace=4&rvstart=' + encodeURIComponent(maxTimestamp.toISOString()), advance, errorCallback);
             } else {
-                httpRequest('https://www.wikidata.org/w/api.php?action=query&format=json&origin=*&prop=revisions&generator=allpages&rvprop=timestamp%7Ccontent%7Cids&rvlimit=1&rvuser=PLbot&gapfrom=Property_uses&gapto=Property_uses&gapnamespace=10', advance, errorCallback);
+                httpRequest('https://www.wikidata.org/w/api.php?action=query&format=json&origin=*&prop=revisions&generator=allpages&rvprop=timestamp%7Ccontent%7Cids&rvlimit=1&rvuser=ListeriaBot&gapfrom=Statistics/count/P' + propertyNumber + 'distinct&gapto=Statistics/count/P' + propertyNumber + 'distinct&gapnamespace=4', advance, errorCallback);
             }
         }
 
