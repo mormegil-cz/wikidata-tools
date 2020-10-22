@@ -12,6 +12,59 @@
         return false;
     }
 
+    function downloadData(propertyNumber, endTimeStr, interval, maxItems, resultCallback, errorCallback) {
+        var endTime = Date.parse(endTimeStr);
+        if (isNaN(endTime)) endTime = Date.now();
+        var startTime = subtractInterval(endTime, interval, maxItems);
+        if (startTime < MIN_TIME) startTime = MIN_TIME;
+        interval = (endTime - startTime) / maxItems;
+        if (interval < 86400000) {
+            interval = 86400000;
+            maxItems = Math.max(1, Math.floor((endTime - startTime) / interval));
+        }
+        var successCount = 0;
+        var remainingItems = maxItems;
+        var errors = [];
+        var results = [];
+        for (var i = 0; i < maxItems; ++i)
+        {
+            var date = new Date(startTime + i * interval);
+            downloadValue(propertyNumber, date, function(count) {
+                results.push({ timestamp: date.toISOString(), count: count });
+                ++successCount;
+                oneDone();
+            }, function(error) {
+                errors.push(error);
+                oneDone();
+            });
+        }
+
+        function oneDone() {
+            --remainingItems;
+            if (remainingItems) return;
+
+            if (successCount) resultCallback(results);
+            else errorCallback(errors);
+        }
+    }
+
+    function downloadValue(propertyNumber, date, resultCallback, errorCallback) {
+        if (date.valueOf() < MAX_HISTORY_DATE) {
+            downloadValueFromHistory(propertyNumber, date, resultCallback, errorCallback);
+        } else {
+            downloadValueFromTemplate(propertyNumber, date, resultCallback, errorCallback);
+        }
+    }
+
+    function downloadValueFromHistory(propertyNumber, date, resultCallback, errorCallback) {
+        var year = date.getUTCFullYear();
+        getYearIndex(year, function(yearIndex) {
+            var monthIndex = yearIndex[date.getUTCMonth()];
+            
+            var url = "https://raw.githubusercontent.com/mormegil-cz/wdprop-usage-history/master/" + date. + "/" + propertyNumber + ".json";
+        });
+    }
+
     function downloadData(propertyNumber, interval, maxItems, resultCallback, errorCallback) {
         var maxTimestamp = null;
         var results = [];
@@ -35,7 +88,7 @@
             var revText = revision['*'];
             var parsedRevText = revText.match(regexp);
 
-            maxTimestamp = subtractInterval(new Date(revTimestamp), interval);
+            maxTimestamp = subtractInterval(new Date(revTimestamp), interval,1);
 
             if (parsedRevText) {
                 var count = (+parsedRevText[1]) || 0;
@@ -62,31 +115,31 @@
         requestNext();
     };
 
-    function subtractInterval(date, interval) {
+    function subtractInterval(date, interval, count) {
         // some wiggle room
         date.setMinutes(date.getMinutes() + 30);
 
         switch (interval) {
             case 'D':
-                date.setDate(date.getDate() - 1);
+                date.setDate(date.getDate() - count);
                 return date;
             case 'W':
-                date.setDate(date.getDate() - 7);
+                date.setDate(date.getDate() - 7 * count);
                 return date;
             case '2W':
-                date.setDate(date.getDate() - 14);
+                date.setDate(date.getDate() - 14 * count);
                 return date;
             case 'M':
-                date.setMonth(date.getMonth() - 1);
+                date.setMonth(date.getMonth() - count);
                 return date;
             case '3M':
-                date.setMonth(date.getMonth() - 3);
+                date.setMonth(date.getMonth() - 3 * count);
                 return date;
             case '6M':
-                date.setMonth(date.getMonth() - 6);
+                date.setMonth(date.getMonth() - 6 * count);
                 return date;
             case '1Y':
-                date.setYear(date.getYear() - 1);
+                date.setYear(date.getYear() - count);
                 return date;
             default:
                 throw 'Unsupported interval';
