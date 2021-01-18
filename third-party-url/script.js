@@ -35,7 +35,7 @@ $(function() {
 
     $.ajax({
         dataType: "json",
-        url: "https://raw.githubusercontent.com/mormegil-cz/wikidata-tools/master/third-party-url/propertyData.json",
+        url: "https://mormegil-cz.github.io/wikidata-tools/third-party-url/propertyData.json",
         success: init
       });
 });
