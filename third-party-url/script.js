@@ -33,6 +33,11 @@ $(function() {
         });
     }
 
+    var entityId = mediaWiki.config.get('wbEntityId');
+    if (!entityId) {
+        return;
+    }
+
     $.ajax({
         dataType: "json",
         url: "https://mormegil-cz.github.io/wikidata-tools/third-party-url/propertyData.json",
