@@ -11,4 +11,4 @@ SELECT (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?p)
   }
   BIND(COALESCE(?operatorLabel, ?domain) AS ?operatorCaption)
 }
-ORDER BY ?c
+ORDER BY ?p ?c ?u
