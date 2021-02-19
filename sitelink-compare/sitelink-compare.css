@@ -1,0 +1,11 @@
+.sitelink-compare-different {
+    font-size: smaller;
+}
+
+.sitelink-compare-different th {
+    font-weight: normal;
+}
+
+.sitelink-compare-missing {
+    color: gray;
+}

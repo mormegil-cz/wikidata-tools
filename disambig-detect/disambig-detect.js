@@ -19,7 +19,7 @@ $(() => {
                 fetch(apiUrl)
                     .then((response) => {
                         if (response.status !== 200) {
-                            console.log('Failed fetching info about ' + url, response);
+                            console.error('Failed fetching info about ' + url, response);
                             $icon.attr('src', 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Icon_Simple_Error.png/20px-Icon_Simple_Error.png');
                             return;
                         }
@@ -27,12 +27,10 @@ $(() => {
                         return response.json();
                     })
                     .then((data) => {
-                        console.debug(data);
                         for (var page in data.query.pages) {
                             if (!data.query.pages.hasOwnProperty(page)) continue;
 
                             var pageData = data.query.pages[page];
-                            console.debug(pageData);
                             var isDisambig = pageData.pageprops && pageData.pageprops.hasOwnProperty('disambiguation');
 
                             $icon.attr('src', isDisambig ? 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Disambig.svg/20px-Disambig.svg.png' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Article_icon_cropped.svg/20px-Article_icon_cropped.svg.png');
