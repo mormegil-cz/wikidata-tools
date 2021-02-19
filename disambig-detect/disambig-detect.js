@@ -15,7 +15,7 @@ $(() => {
                 $icon.attr('src', 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Loading_icon_cropped.gif/20px-Loading_icon_cropped.gif');
                 $icon.prependTo($sitelink);
 
-                var apiUrl = new URL('/w/api.php?action=query&format=json&origin=*&prop=pageprops&titles=' + pageName, url.origin);
+                var apiUrl = new URL('/w/api.php?action=query&format=json&origin=*&prop=info%7Cpageprops&titles=' + pageName, url.origin);
                 fetch(apiUrl)
                     .then((response) => {
                         if (response.status !== 200) {
@@ -31,9 +31,10 @@ $(() => {
                             if (!data.query.pages.hasOwnProperty(page)) continue;
 
                             var pageData = data.query.pages[page];
+                            var isRedirect = pageData.hasOwnProperty('redirect');
                             var isDisambig = pageData.pageprops && pageData.pageprops.hasOwnProperty('disambiguation');
 
-                            $icon.attr('src', isDisambig ? 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Disambig.svg/20px-Disambig.svg.png' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Article_icon_cropped.svg/20px-Article_icon_cropped.svg.png');
+                            $icon.attr('src', isRedirect ? 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Redirect_arrow_without_text_(cropped).svg/20px-Redirect_arrow_without_text_(cropped).svg.png' : (isDisambig ? 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Disambig.svg/20px-Disambig.svg.png' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Article_icon_cropped.svg/20px-Article_icon_cropped.svg.png'));
                             break;
                         }
                     });
