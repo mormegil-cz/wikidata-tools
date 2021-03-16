@@ -19,6 +19,8 @@ $(function() {
                 var $dropdown = $('<select><option value="">More links</value></select>');
                 for (var i = 0; i < propDef.length; ++i) {
                     var linkDef = propDef[i];
+                    var regexp = linkDef.r;
+                    if (regexp && !(new RegExp(regexp).test(ident))) continue;
                     var url = linkDef.u.replace('$1', encodeURIComponent(ident));
                     $linkOption = $('<option>');
                     $linkOption.text(linkDef.c);

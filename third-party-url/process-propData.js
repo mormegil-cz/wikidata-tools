@@ -8,7 +8,7 @@ for (let i = 0; i < queryResults.length; ++i) {
 	let p = row.p.value;
     let list = results[p] || [];
     results[p] = list;
-    list.push({u: row.u.value, c: row.c.value});
+    list.push({u: row.u.value, c: row.c.value, r: row.r && row.r.value});
 }
 
 fs.writeFileSync('propertyData.json', JSON.stringify(results));
