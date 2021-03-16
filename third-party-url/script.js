@@ -17,6 +17,7 @@ $(function() {
                 var $link = $statement.find('.wikibase-statementview-mainsnak .wb-external-id');
                 var ident = $link.text();
                 var $dropdown = $('<select><option value="">More links</value></select>');
+                var linkCount = 0;
                 for (var i = 0; i < propDef.length; ++i) {
                     var linkDef = propDef[i];
                     var regexp = linkDef.r;
@@ -27,10 +28,13 @@ $(function() {
                     $linkOption.attr('title', url);
                     $linkOption.click(linkOpener(url));
                     $dropdown.append($linkOption);
+                    ++linkCount;
                 }
-                var $dropdownContainer = $('<span> </span>');
-                $dropdownContainer.append($dropdown);
-                $link.parent().append($dropdownContainer);
+                if (linkCount) {
+                    var $dropdownContainer = $('<span> </span>');
+                    $dropdownContainer.append($dropdown);
+                    $link.parent().append($dropdownContainer);
+                }
             });
         });
     }
