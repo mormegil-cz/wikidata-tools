@@ -14,8 +14,8 @@ $(function() {
 
             $property.find('.wikibase-statementview').each(function() {
                 var $statement = $(this);
-                var $link = $statement.find('.wikibase-statementview-mainsnak .wb-external-id');
-                var ident = $link.text();
+                var $valueSnak = $statement.find('.wikibase-statementview-mainsnak .wikibase-snakview-variation-valuesnak');
+                var ident = $valueSnak.text();
                 var $dropdown = $('<select><option value="">More links</value></select>');
                 var linkCount = 0;
                 for (var i = 0; i < propDef.length; ++i) {
@@ -33,7 +33,7 @@ $(function() {
                 if (linkCount) {
                     var $dropdownContainer = $('<span> </span>');
                     $dropdownContainer.append($dropdown);
-                    $link.parent().append($dropdownContainer);
+                    $valueSnak.append($dropdownContainer);
                 }
             });
         });
