@@ -1,15 +1,28 @@
 SELECT (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?p) (?url AS ?u) (?operatorCaption AS ?c) (?regex AS ?r) WHERE {
   {
-    SELECT ?prop ?url ?operatorLabel ?domain ?regex WHERE {
-      ?prop p:P3303 ?stmt.
-      MINUS { ?stmt wikibase:rank wikibase:DeprecatedRank }
-      ?stmt ps:P3303 ?url.
+    SELECT ?prop ?url ?operatorLabel ?domain ?regex ?lang WHERE {
+      {
+        {
+          ?prop p:P3303 ?stmt.
+          MINUS { ?stmt wikibase:rank wikibase:DeprecatedRank }
+          ?stmt ps:P3303 ?url.
+          FILTER(false).
+        }
+        UNION
+        {
+          ?prop p:P1630 ?stmt.
+          ?stmt wikibase:rank wikibase:NormalRank.
+          ?stmt ps:P1630 ?url.
+          MINUS { ?prop wdt:P1630 ?url }
+        }
+      }
       OPTIONAL { ?stmt pq:P137 ?operator. }
+      OPTIONAL { ?stmt pq:P407/wdt:P305 ?lang. }
       OPTIONAL { ?stmt pq:P8460 ?regex. }
       BIND(REPLACE(?url, "^https?://([^/]*)/.*$", "$1") AS ?domain)
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
     }
   }
-  BIND(COALESCE(?operatorLabel, ?domain) AS ?operatorCaption)
+  BIND(CONCAT(COALESCE(?operatorLabel, ?domain), ' ', COALESCE(?lang, '')) AS ?operatorCaption)
 }
 ORDER BY ?p ?c ?u
