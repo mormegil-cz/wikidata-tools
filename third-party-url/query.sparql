@@ -6,7 +6,6 @@ SELECT (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?p)
           ?prop p:P3303 ?stmt.
           MINUS { ?stmt wikibase:rank wikibase:DeprecatedRank }
           ?stmt ps:P3303 ?url.
-          FILTER(false).
         }
         UNION
         {
