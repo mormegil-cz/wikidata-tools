@@ -4,3 +4,4 @@ wget -i query.uri -O queryResults.json
 node process-propData.js
 if errorlevel 1 goto :eof
 del queryResults.json
+git diff --word-diff=color
