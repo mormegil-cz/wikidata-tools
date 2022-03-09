@@ -1,0 +1,30 @@
+body {
+    margin: 0;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#toolbar {
+    height: auto;
+    padding: 10px;
+    background-color: #ccc;
+    border-bottom: 1px solid black;
+    margin-bottom: 10px;
+}
+
+#output {
+    min-height: 0px;
+    height: 100%;
+    flex: 1;
+    overflow: hidden;
+}
+
+#outputFrame {
+    border: none;
+    width: 100%;
+    height: 100%;
+}
