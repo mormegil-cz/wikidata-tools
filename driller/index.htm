@@ -18,6 +18,8 @@
                 <h3>Wikidata Driller</h3>
 
                 <button id="btnAddQuery">+Query</button>
+                <button id="btnUnion">+Union</button>
+                <button id="btnIntersect">+Intersect</button>
                 <button id="btnZoomFit">[Fit]</button>
                 <button id="btnZoomPlus">[+]</button>
                 <button id="btnZoomMinus">[-]</button>
@@ -28,8 +30,10 @@
             </div>
 
             <div id="selectionToolbox" style="visibility: hidden">
+                <button id="btnDeleteNode">Del!</button>
                 <button id="btnWqs">WQS</button>
                 <button id="btnLoadProps">Props?</button>
+                <button id="btnDrillProp">Drill</button>
                 <button id="btnDrillCustomProp">+P#</button>
             </div>
         </div>
@@ -40,11 +44,24 @@
         <form method="dialog">
             <div>
                 <label for="editQuerySparql">WHERE part of a SPARQL query:</label><br />
-                <textarea id="editQuerySparql" rows="20" cols="80"></textarea>
+                <textarea id="editQuerySparql" rows="20" cols="80" autofocus="autofocus" ></textarea>
             </div>
             <div>
-                <button value="btnQueryCancel">Cancel</button>
+                <button id="btnQueryCancel">Cancel</button>
                 <button id="btnQueryConfirm" value="default">Confirm</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="dlgDrillProp">
+        <h2>Choose property for drilldown</h2>
+        <form method="dialog">
+            <div>
+                <label for="boxDrillPropProperty">Property:</label><br />
+                <select id="boxDrillPropProperty" autofocus="autofocus"></select>
+            </div>
+            <div>
+                <button id="btnDrillPropCancel">Cancel</button>
+                <button id="btnDrillPropConfirm" value="default">Confirm</button>
             </div>
         </form>
     </dialog>

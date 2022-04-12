@@ -5,7 +5,3 @@
  *
  * Copyright (C) 2018 Varun A P
  */
-
-//! moment.js
-
-//! moment.js locale configuration
