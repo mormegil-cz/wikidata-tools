@@ -4,7 +4,7 @@
     el('btnRender').onclick = function () {
         el('canvas').innerHTML = '<img class="loader" src="https://upload.wikimedia.org/wikipedia/commons/f/f8/Ajax-loader%282%29.gif" />';
         // setTimeout(function () { renderChart(loadData()) }, 1000);
-        downloadData(el('frmProperty').value, el('frmInterval').value, 10, function (results) {
+        downloadAllData(el('frmProperty').value, el('frmInterval').value, 10, function (results) {
             renderChart(buildSpec(results));
         }, function (error) {
             el('canvas').innerHTML = '<p class="error">Error retrieving data</p>';
@@ -12,7 +12,44 @@
         return false;
     }
 
-    function downloadData(propertyNumber, endTimeStr, interval, maxItems, resultCallback, errorCallback) {
+    var availableData = []; // {from: 123456, to: 789000, value: 1234}
+
+    function findFromAvailableData(time) {
+        // TODO: binary search?
+        for (var i = 0; i < availableData.length; ++i) {
+            var curr = availableData[i];
+            if (curr.from <= time && curr.to >= time) return curr.value;
+            if (curr.to < time) break;
+        }
+        return null;
+    }
+
+    function storeToAvailableData(minTime, maxTime, value) {
+        var newEntry = {from: minTime, to: maxTime, value: value};
+        for (var i = 0; i < availableData.length; ++i) {
+            var curr = availableData[i];
+            if (curr.from <= maxTime && curr.to >= minTime) {
+                // should not happen…
+                return;
+            }
+            if (curr.to < minTime) {
+                availableData.splice(i, 0, newEntry);
+                return;
+            }
+        }
+        availableData.push(newEntry);
+    }
+
+    function findOrDownload(propertyNumber, date, resultCallback, errorCallback) {
+        var available = findFromAvailableData(time);
+        if (available !== null) {
+            resultCallback(available);
+            return;
+        }
+        downloadValue(propertyNumber, date, resultCallback, errorCallback);
+    }
+
+    function downloadAllData(propertyNumber, endTimeStr, interval, maxItems, resultCallback, errorCallback) {
         var endTime = Date.parse(endTimeStr);
         if (isNaN(endTime)) endTime = Date.now();
         var startTime = subtractInterval(endTime, interval, maxItems);
@@ -29,7 +66,7 @@
         for (var i = 0; i < maxItems; ++i)
         {
             var date = new Date(startTime + i * interval);
-            downloadValue(propertyNumber, date, function(count) {
+            findOrDownload(propertyNumber, date, function(count) {
                 results.push({ timestamp: date.toISOString(), count: count });
                 ++successCount;
                 oneDone();
@@ -59,13 +96,50 @@
     function downloadValueFromHistory(propertyNumber, date, resultCallback, errorCallback) {
         var year = date.getUTCFullYear();
         getYearIndex(year, function(yearIndex) {
-            var monthIndex = yearIndex[date.getUTCMonth()];
-            
-            var url = "https://raw.githubusercontent.com/mormegil-cz/wdprop-usage-history/master/" + date. + "/" + propertyNumber + ".json";
-        });
+            var dayRange = findInHistoryIndex(yearIndex, date.getUTCMonth(), date.getUTCDate());
+            if (!dayRange) {
+                // TODO: Try another year, if available
+                errorCallback();
+                return;
+            }
+
+            var url = "https://raw.githubusercontent.com/mormegil-cz/wdprop-usage-history/master/" + year + "/" + dayRange.minMonth + "/" + dayRange.minDay + "/" + propertyNumber + ".json";
+            httpRequest(url, function(data) {
+                var minTime = new Date(year, dayRange.minMonth, dayRange.minDay).getTime();
+                var maxTime = new Date(year, dayRange.maxMonth, dayRange.maxDay).getTime();
+                storeToAvailableData(minTime, maxTime, data);
+                resultCallback(data);
+            }, errorCallback);
+        }, errorCallback);
     }
 
-    function downloadData(propertyNumber, interval, maxItems, resultCallback, errorCallback) {
+    function getYearIndex(year, resultCallback, errorCallback) {
+        httpRequest("https://raw.githubusercontent.com/mormegil-cz/wdprop-usage-history/master/" + year + "/_index.json", resultCallback, errorCallback);
+    }
+
+    function findInHistoryIndex(yearIndex, month, day) {
+        if (!yearIndex) return null;
+        var m = month;
+        var d = day;
+        while (m > 0) {
+            var monthIndex = yearIndex[m];
+            if (monthIndex) {
+                var prev = null;
+                for (var i = 0; i < monthIndex.length; ++i) {
+                    if (monthIndex[i] >= d) break;
+                    prev = monthIndex[i];
+                }
+                if (prev) {
+                    return { minMonth: m, minDay: prev, maxMonth: month, maxDay: day };
+                }
+            }
+            --m;
+            d = 31;
+        }
+        return null;
+    }
+
+    function downloadAllData(propertyNumber, interval, maxItems, resultCallback, errorCallback) {
         var maxTimestamp = null;
         var results = [];
         var regexp = RegExp('\\| statcount = ([0-9]+)');
