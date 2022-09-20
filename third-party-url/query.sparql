@@ -1,6 +1,7 @@
 SELECT (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?p) (?url AS ?u) (?operatorCaption AS ?c) (?regex AS ?r) WHERE {
   {
     SELECT ?prop ?url ?operatorLabel ?domain ?regex ?lang WHERE {
+      ?prop wikibase:propertyType [].
       {
         {
           ?prop p:P3303 ?stmt.
@@ -22,6 +23,6 @@ SELECT (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?p)
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
     }
   }
-  BIND(CONCAT(COALESCE(?operatorLabel, ?domain), ' ', COALESCE(?lang, '')) AS ?operatorCaption)
+  BIND(REPLACE(CONCAT(COALESCE(?operatorLabel, ?domain), ' ', COALESCE(?lang, '')), ' *$', '') AS ?operatorCaption)
 }
 ORDER BY ?p ?c ?u
