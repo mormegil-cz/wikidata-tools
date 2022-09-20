@@ -26,6 +26,7 @@ $(function() {
                     $linkOption = $('<option>');
                     $linkOption.text(linkDef.c);
                     $linkOption.attr('title', url);
+                    $linkOption.change(linkOpener(url));
                     $linkOption.click(linkOpener(url));
                     $dropdown.append($linkOption);
                     ++linkCount;
