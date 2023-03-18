@@ -7,31 +7,31 @@ Various browser-based tools for Wikidata
 
 A tool to display the history of a Wikidata entity in a structured form.
 
-https://mormegil-cz.github.io/wikidata-tools/blame/
+[https://mormegil-cz.github.io/wikidata-tools/blame/](https://mormegil-cz.github.io/wikidata-tools/blame/)
 
 ### Wikidata Driller
 
 Interactive visualization tool for Wikidata entities.
 
-https://mormegil-cz.github.io/wikidata-tools/driller/
+[https://mormegil-cz.github.io/wikidata-tools/driller/](https://mormegil-cz.github.io/wikidata-tools/driller/)
 
 ### OID browser
 
 Display a tree structure of [ITU/ISO/IEC OIDs](https://www.wikidata.org/wiki/Property:P3743) represented on Wikidata.
 
-https://mormegil-cz.github.io/wikidata-tools/oid-browser/
+[https://mormegil-cz.github.io/wikidata-tools/oid-browser/](https://mormegil-cz.github.io/wikidata-tools/oid-browser/)
 
 ### Property usage chart
 
 Chart of historical property usage data.
 
-https://mormegil-cz.github.io/wikidata-tools/property-chart/
+[https://mormegil-cz.github.io/wikidata-tools/property-chart/](https://mormegil-cz.github.io/wikidata-tools/property-chart/)
 
 ### UDC browser
 
 Display a tree structure of the (completely broken) [Universal Decimal Classification](https://www.wikidata.org/wiki/Property:P1190) data on Wikidata.
 
-https://mormegil-cz.github.io/wikidata-tools/udc-browser/
+[https://mormegil-cz.github.io/wikidata-tools/udc-browser/](https://mormegil-cz.github.io/wikidata-tools/udc-browser/)
 
 
 
