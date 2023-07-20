@@ -10,7 +10,7 @@ $(function () {
     }
 
     function udcLeaf(udc) {
-		var leafNum = udc.charCodeAt(0)
+		var leafNum = udc.charCodeAt(udc.length - 1);
         return isNaN(leafNum) ? 0 : leafNum;
     }
 
