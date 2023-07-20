@@ -29,7 +29,7 @@ Chart of historical property usage data.
 
 ### UDC browser
 
-Display a tree structure of the (completely broken) [Universal Decimal Classification](https://www.wikidata.org/wiki/Property:P1190) data on Wikidata.
+Display a tree structure of the [Universal Decimal Classification](https://www.wikidata.org/wiki/Property:P1190) data on Wikidata.
 
 [https://mormegil-cz.github.io/wikidata-tools/udc-browser/](https://mormegil-cz.github.io/wikidata-tools/udc-browser/)
 
