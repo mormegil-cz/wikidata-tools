@@ -1,13 +1,15 @@
 $(function() {
-    function linkOpener(url) {
+    let lastClickedUrl = '';
+    function linkOnClickOpener(url) {
         return function() {
+            lastClickedUrl = url;
             window.open(url);
             return false;
         }
     }
     function selectChanged(evt) {
         var url = evt.target.value;
-        if (url) {
+        if (url && url !== lastClickedUrl) {
             window.open(url);
         }
         return false;
@@ -35,7 +37,7 @@ $(function() {
                     $linkOption.text(linkDef.c);
                     $linkOption.attr('title', url);
                     $linkOption.prop('value', url);
-                    $linkOption.click(linkOpener(url));
+                    $linkOption.click(linkOnClickOpener(url));
                     $dropdown.append($linkOption);
                     ++linkCount;
                 }
