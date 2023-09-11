@@ -1,8 +1,12 @@
 $(function() {
     let lastClickedUrl = '';
+    let lastOpenTime = -1;
     function linkOnClickOpener(url) {
         return function() {
+            const now = Date.now();
+            if (url === lastClickedUrl && now - lastOpenTime < 100) return;
             lastClickedUrl = url;
+            lastOpenTime = now;
             window.open(url);
             return false;
         }
@@ -11,7 +15,9 @@ $(function() {
         var url = evt.target.value;
         if (url && url !== lastClickedUrl) {
             window.open(url);
+            lastOpenTime = Date.now();
         }
+        lastClickedUrl = url;
         return false;
     }
     function init(propertyData) {
