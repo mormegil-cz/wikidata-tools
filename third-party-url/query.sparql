@@ -1,28 +1,34 @@
-SELECT (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?p) (?url AS ?u) (?operatorCaption AS ?c) (?regex AS ?r) WHERE {
+SELECT (?propId AS ?p) (?url AS ?u) (?operatorCaption AS ?c) (?regex AS ?r) WHERE {
   {
-    SELECT ?prop ?url ?operatorLabel ?domain ?regex ?lang WHERE {
-      ?prop wikibase:propertyType [].
+    SELECT ?propId ?url ?stmt (GROUP_CONCAT(?operator1Label; SEPARATOR=", ") AS ?operatorLabel) (GROUP_CONCAT(?regex1; SEPARATOR="|") AS ?regex) (GROUP_CONCAT(?lang1; SEPARATOR=", ") AS ?lang) WHERE {
       {
-        {
-          ?prop p:P3303 ?stmt.
-          MINUS { ?stmt wikibase:rank wikibase:DeprecatedRank }
-          ?stmt ps:P3303 ?url.
-        }
-        UNION
-        {
-          ?prop p:P1630 ?stmt.
-          ?stmt wikibase:rank wikibase:NormalRank.
-          ?stmt ps:P1630 ?url.
-          MINUS { ?prop wdt:P1630 ?url }
+        SELECT ?propId ?url ?operator1Label ?regex1 ?lang1 WHERE {
+          ?prop wikibase:propertyType [].
+          {
+            {
+              ?prop p:P3303 ?stmt.
+              MINUS { ?stmt wikibase:rank wikibase:DeprecatedRank }
+              ?stmt ps:P3303 ?url.
+            }
+            UNION
+            {
+              ?prop p:P1630 ?stmt.
+              ?stmt wikibase:rank wikibase:NormalRank;
+                    ps:P1630 ?url.
+              MINUS { ?prop wdt:P1630 ?url }
+            }
+          }
+          OPTIONAL { ?stmt pq:P137 ?operator1. }
+          OPTIONAL { ?stmt pq:P407/wdt:P305 ?lang1. }
+          OPTIONAL { ?stmt pq:P8460 ?regex1. }
+          BIND (SUBSTR(STR(?prop), STRLEN('http://www.wikidata.org/entity/') + 1) AS ?propId)
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
         }
       }
-      OPTIONAL { ?stmt pq:P137 ?operator. }
-      OPTIONAL { ?stmt pq:P407/wdt:P305 ?lang. }
-      OPTIONAL { ?stmt pq:P8460 ?regex. }
-      BIND(REPLACE(?url, "^https?://([^/]*)/.*$", "$1") AS ?domain)
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
     }
+    GROUP BY ?propId ?url ?stmt
   }
-  BIND(REPLACE(CONCAT(COALESCE(?operatorLabel, ?domain), ' ', COALESCE(?lang, '')), ' *$', '') AS ?operatorCaption)
+  BIND(REPLACE(?url, "^https?://([^/]*)/.*$", "$1") AS ?domain)
+  BIND(REPLACE(CONCAT(IF(?operatorLabel = "", ?domain, ?operatorLabel), ' ', COALESCE(?lang, '')), ' *$', '') AS ?operatorCaption)
 }
 ORDER BY ?p ?c ?u
