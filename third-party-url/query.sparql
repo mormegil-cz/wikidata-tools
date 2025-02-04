@@ -1,6 +1,6 @@
 SELECT (?propId AS ?p) (?url AS ?u) (?operatorCaption AS ?c) (?regex AS ?r) WHERE {
   {
-    SELECT ?propId ?url ?stmt (GROUP_CONCAT(?operator1Label; SEPARATOR=", ") AS ?operatorLabel) (GROUP_CONCAT(?regex1; SEPARATOR="|") AS ?regex) (GROUP_CONCAT(?lang1; SEPARATOR=", ") AS ?lang) WHERE {
+    SELECT ?propId ?url ?stmt (GROUP_CONCAT(DISTINCT ?operator1Label; SEPARATOR=", ") AS ?operatorLabel) (GROUP_CONCAT(DISTINCT ?regex1; SEPARATOR="|") AS ?regex) (GROUP_CONCAT(DISTINCT ?lang1; SEPARATOR=", ") AS ?lang) WHERE {
       {
         SELECT ?propId ?url ?operator1Label ?regex1 ?lang1 WHERE {
           ?prop wikibase:propertyType [].
