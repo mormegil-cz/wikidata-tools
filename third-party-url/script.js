@@ -63,7 +63,7 @@ $(function() {
 
     $.ajax({
         dataType: "json",
-        url: "https://mormegil-cz.github.io/wikidata-tools/third-party-url/propertyData.json",
+        url: "https://tools-static.wmflabs.org/mormegil/tools/third-party-url/propertyData.json",
         success: init
       });
 });
